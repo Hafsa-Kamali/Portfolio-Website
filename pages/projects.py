@@ -125,42 +125,42 @@ def main():
             "name": "BMI Calculator",
             "description": "Comprehensive health tracking tool that calculates Body Mass Index with detailed health insights.",
             "technologies": ["Python", "Health Tech", "Data Analysis"],
-            "link": "project-08-streamlit-bmi-calculator",
+            "link": "https://github.com/Hafsa-Kamali/BMI-Calculator",
             "icon": "⚖️"
         },
         {
             "name": "Library Management System",
             "description": "Robust digital library management application for tracking books, members, and lending records.",
             "technologies": ["Python", "Database Management", "CRUD Operations"],
-            "link": "project-01-madlib-python-project",
+            "link": "https://github.com/Hafsa-Kamali/library-manager",
             "icon": "📚"
         },
         {
             "name": "Password Generator",
             "description": "Advanced secure password generation tool with customizable complexity and strength metrics.",
             "technologies": ["Python", "Cryptography", "Security"],
-            "link": "project-07-password-generator-project",
+            "link": "https://github.com/Hafsa-Kamali/password-app-generator",
             "icon": "🔐"
         },
         {
             "name": "Face Emotion Detector",
             "description": "AI-powered emotion recognition system using computer vision and machine learning techniques.",
             "technologies": ["OpenCV", "Machine Learning", "Computer Vision"],
-            "link": "#face-emotion-detector",
+            "link": "https://github.com/Hafsa-Kamali/Face-mesh-Detection",
             "icon": "😊"
         },
         {
             "name": "Unit Converter",
             "description": "Flexible unit conversion tool supporting multiple measurement systems and categories.",
             "technologies": ["Python", "Utility Tools", "Calculation"],
-            "link": "#unit-converter",
+            "link": "https://github.com/Hafsa-Kamali/Unit-Convertor",
             "icon": "📏"
         },
         {
             "name": "Growth Mind Challenge",
             "description": "Interactive personal development platform with daily challenges and progress tracking.",
             "technologies": ["Python", "Self-Improvement", "Goal Setting"],
-            "link": "#growth-mind-challenge",
+            "link": "https://github.com/Hafsa-Kamali/Mind-Growth-Challenge",
             "icon": "🌱"
         }
     ]
