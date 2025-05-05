@@ -1,44 +1,40 @@
 import os
 from dotenv import load_dotenv
 import streamlit as st
-import requests
 from pathlib import Path
 import base64
-import time
 from typing import Dict, List
+import google.generativeai as genai
 
-# Load environment variables
+# --- Load environment variables ---
 load_dotenv()
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Initialize OpenAI-compatible client for LM Studio
-class OpenAI:
-    def __init__(self, base_url, api_key="not-needed"):
-        self.base_url = base_url
-        self.api_key = api_key
+# --- Gemini-based Assistant ---
+# --- Gemini-based Assistant ---
+class AIAssistant:
+    def __init__(self):
+        self.chatbot = GeminiChat()
     
-    def chat_completions_create(self, **kwargs):
+    def generate_response(self, user_input: str) -> str:
+        return self.chatbot.get_response(user_input)
+
+class GeminiChat:
+    def __init__(self):
+        # Use the correct model name for current API version
+        self.model = genai.GenerativeModel("gemini-2.0-flash")
+        self.chat = self.model.start_chat(history=[])
+
+    def get_response(self, user_input):
         try:
-            response = requests.post(
-                f"{self.base_url}/v1/chat/completions", 
-                json=kwargs
-            )
-            response.raise_for_status()  # Raise an exception for bad responses
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            st.error(f"LLM Request Error: {e}")
-            return None
-
-# Initialize client for LM Studio (running locally)
-client = OpenAI(
-    base_url="http://localhost:1234"  # Simplified base URL
-)
-
-# Set page configuration
-st.set_page_config(
-    page_title="AI Assistant", 
-    page_icon="🤖", 
-    layout="wide"
-)
+            response = self.chat.send_message(user_input)
+            return response.text
+        except Exception as e:
+            # Enhanced error handling
+            error_msg = f"⚠️ AI Service Error: {str(e)}"
+            if "404" in str(e):
+                error_msg += "\n\nPlease check:\n1. Model availability\n2. API endpoint configuration\n3. Account permissions"
+            return error_msg
 
 # --- Image Handling ---
 def img_to_base64(img_path):
@@ -80,7 +76,7 @@ def get_custom_css(bg_image=None, profile_image=None):
         background-position: center;
         color: white;
     }}
-    
+
     .profile-img {{
         width: 150px;
         height: 150px;
@@ -90,9 +86,7 @@ def get_custom_css(bg_image=None, profile_image=None):
         box-shadow: 0 0 15px rgba(100, 255, 218, 0.6);
         animation: float 6s ease-in-out infinite;
     }}
-    
-   
-    
+
     .user-message {{
         background-color: rgba(100, 255, 218, 0.2);
         border-radius: 10px;
@@ -100,7 +94,7 @@ def get_custom_css(bg_image=None, profile_image=None):
         margin: 10px 0;
         border-left: 3px solid #64FFDA;
     }}
-    
+
     .assistant-message {{
         background-color: rgba(139, 92, 246, 0.2);
         border-radius: 10px;
@@ -108,7 +102,7 @@ def get_custom_css(bg_image=None, profile_image=None):
         margin: 10px 0;
         border-left: 3px solid #8b5cf6;
     }}
-    
+
     .gradient-text {{
         background: linear-gradient(90deg, #64FFDA, #8b5cf6);
         -webkit-background-clip: text;
@@ -116,49 +110,13 @@ def get_custom_css(bg_image=None, profile_image=None):
         color: transparent;
         font-weight: bold;
     }}
-    
+
     @keyframes float {{
         0%, 100% {{ transform: translateY(0px); }}
         50% {{ transform: translateY(-8px); }}
     }}
     </style>
     """
-
-# --- AI Assistant Setup ---
-class AIAssistant:
-    def __init__(self):
-        self.system_prompt = """
-        You are an AI personal assistant. 
-        You are knowledgeable in technology, machine learning, web development, 
-        and data science. You respond professionally but with a friendly tone.
-        """
-        self.chat_history: List[Dict] = []
-        
-    def generate_response(self, user_input: str) -> str:
-        """Generate AI response using local LM Studio model"""
-        try:
-            # Add to chat history
-            self.chat_history.append({"role": "user", "content": user_input})
-            
-            # Create completion with local model
-            response = client.chat_completions_create(
-                model="llama-3.2-1b-instruct",  # Ensure this matches your loaded model
-                messages=[
-                    {"role": "system", "content": self.system_prompt},
-                    *self.chat_history[-6:]  # Recent chat history
-                ],
-                temperature=0.7,
-            )
-            
-            if response and 'choices' in response:
-                ai_response = response['choices'][0]['message']['content'].strip()
-            else:
-                ai_response = "Sorry, I couldn't generate a response. Please try again."
-                
-            self.chat_history.append({"role": "assistant", "content": ai_response})
-            return ai_response
-        except Exception as e:
-            return f"Error generating response: {str(e)}"
 
 # --- Main Application ---
 def main():
@@ -167,14 +125,15 @@ def main():
     profile_image = img_to_base64(assets_dir / "hafsa.png")
     
     # Apply custom CSS
+    st.set_page_config(page_title="AI Assistant", page_icon="🤖", layout="wide")
     st.markdown(get_custom_css(bg_image, profile_image), unsafe_allow_html=True)
-    
+
     # Initialize session state
     if "assistant" not in st.session_state:
         st.session_state.assistant = AIAssistant()
     if "messages" not in st.session_state:
         st.session_state.messages = []
-    
+
     # Sidebar with profile
     with st.sidebar:
         if profile_image:
@@ -191,7 +150,7 @@ def main():
                 AI
             </div>
             """, unsafe_allow_html=True)
-        
+
         st.markdown("## <span class='gradient-text' > Hafsa Kamali AI Assistant</span>", unsafe_allow_html=True)
         st.markdown("""
         <div style="margin-top: 20px;">
@@ -205,23 +164,18 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        # Display LM Studio connection status
         st.markdown("---")
-        st.markdown("**Local Model Status**")
-        st.code("""
-        Model: llama-3.2-1b-instruct
-        Server: http://localhost:1234/v1/chat/completions
-        """)
-    
-    # Main chat area
+        st.markdown("**Model: Gemini Pro**")
+        st.markdown("**Provider: Google AI**")
+
+    # Main Area
     st.markdown("# <span class='gradient-text'>Personal AI Assistant</span>", unsafe_allow_html=True)
     
-    # Founder Introduction Section
     st.markdown("""
     <div style="background-color: rgba(17, 34, 64, 0.7); border-radius: 15px; padding: 20px; margin-bottom: 20px; color: white;">
     <h2 style="color: #64FFDA;">About the Founder: <span class='gradient-text'> Hafsa Kamali </span></h2>
     <p>Hafsa Kamali is an innovative technologist and AI enthusiast passionate about bridging the gap between cutting-edge technology and practical applications. With a strong background in machine learning, web development, and data science, she has developed this intelligent AI assistant to make advanced technological solutions more accessible.</p>
-    
+
     <h3 style="color: #8b5cf6;">Professional Highlights</h3>
     <ul style="list-style-type: none; padding-left: 0;">
         <li>🚀 Expert in Machine Learning and Artificial Intelligence</li>
@@ -229,39 +183,31 @@ def main():
         <li>📊 Data Science Practitioner</li>
         <li>🌐 Technology Innovation Advocate</li>
     </ul>
-    
+
     <p>Through this AI assistant, Hafsa aims to demonstrate the potential of conversational AI in providing intelligent, context-aware support across various technological domains.</p>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Chat container
+
     chat_container = st.container()
-    
-    # Display chat messages
+
     with chat_container:
         st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-        
+
         for message in st.session_state.messages:
             if message["role"] == "user":
                 st.markdown(f'<div class="user-message">👻<strong>You:</strong> {message["content"]}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(f'<div class="assistant-message">🐱‍👓<strong>Assistant:</strong> {message["content"]}</div>', unsafe_allow_html=True)
-        
+
         st.markdown('</div>', unsafe_allow_html=True)
-    
-    # User input
+
     user_input = st.chat_input("Type your message here...")
-    
+
     if user_input:
-        # Add user message to chat
         st.session_state.messages.append({"role": "user", "content": user_input})
-        
-        # Generate AI response
         with st.spinner("Thinking..."):
             ai_response = st.session_state.assistant.generate_response(user_input)
             st.session_state.messages.append({"role": "assistant", "content": ai_response})
-        
-        # Rerun to update chat display
         st.rerun()
 
 if __name__ == "__main__":
